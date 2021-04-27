@@ -13,15 +13,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:loading_overlay/loading_overlay.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 const String _kMonthlySubscriptionId = 'subscription_monthly';
 const List<String> _kProductIds = <String>[_kMonthlySubscriptionId];
 //main
-void main() {
-  // WidgetsFlutterBinding.ensureInitialized();
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+
+  print("Handling a background message: ${message.messageId}");
+  //Navigator.push(context, _createRoute_2());
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   InAppPurchaseConnection.enablePendingPurchases();
   runApp(
       MaterialApp(title: 'distant', debugShowCheckedModeBanner: false, routes: {
@@ -38,60 +49,91 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
-  int freenum = 7;
-  bool freePeriodUtilized = false;
   bool subsciptionActive = false;
   bool showPurchaseWidget = false;
   bool _isAvailable = false;
   bool _purchasePending = false;
   bool _loading = true;
   bool iosSubscriptionActive = false;
-  bool _subscriptionCheckComplete = false;
   String _queryProductError;
   List<String> _notFoundIds = [];
   List<ProductDetails> _products = [];
   List<PurchaseDetails> _purchases = [];
 
   final InAppPurchaseConnection _connection = InAppPurchaseConnection.instance;
-  final FirebaseMessaging _fcm = FirebaseMessaging();
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
   StreamSubscription iosSubscription;
   StreamSubscription<List<PurchaseDetails>> _subscription;
 
-  void notificationrecieve() {
+  void notificationrecieve() async {
     if (Platform.isIOS) {
-      iosSubscription = _fcm.onIosSettingsRegistered.listen((data) {
-        print(data);
-        _saveDeviceToken();
+      NotificationSettings settings = await _fcm.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      print('User granted permission: ${settings.authorizationStatus}');
+      if (settings.authorizationStatus != AuthorizationStatus.authorized) {
+        return;
+      }
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+        alert: true, // Required to display a heads up notification
+        badge: true,
+        sound: true,
+      );
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print('Got a message whilst in the foreground!');
+        print('Message data: ${message.data}');
+
+        if (message.notification != null) {
+          print(
+              'Message also contained a notification: ${message.notification}');
+        }
       });
       iosSubscriptionActive = true;
-      _fcm.requestNotificationPermissions(IosNotificationSettings());
-    } else {
       _saveDeviceToken();
+
+      _fcm.subscribeToTopic("currencyios");
+      FirebaseMessaging.instance
+          .getInitialMessage()
+          .then((RemoteMessage message) {
+        if (message != null) {
+          Navigator.push(context, _createRoute_2());
+        }
+      });
+
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        print('A new onMessageOpenedApp event was published!');
+        Navigator.push(context, _createRoute_2());
+      });
+      // _fcm.configure(
+      //   onMessage: (Map<String, dynamic> message) async {
+      //     print("onMessage: $message");
+      //   },
+      //   onLaunch: (Map<String, dynamic> message) async {
+      //     print("onLaunch: $message");
+      //     Navigator.push(context, _createRoute_2());
+      //   },
+      //   onResume: (Map<String, dynamic> message) async {
+      //     print("onResume: $message");
+      //     Navigator.push(context, _createRoute_2());
+      //   },
+      // );
+
+      // _fcm.requestNotificationPermissions(const IosNotificationSettings(
+      //     sound: true, badge: true, alert: true, provisional: true));
     }
-
-    _fcm.subscribeToTopic("currency");
-    _fcm.configure(
-      onMessage: (Map<String, dynamic> message) async {
-        print("onMessage: $message");
-      },
-      onLaunch: (Map<String, dynamic> message) async {
-        print("onLaunch: $message");
-        Navigator.push(context, _createRoute_2());
-      },
-      onResume: (Map<String, dynamic> message) async {
-        print("onResume: $message");
-        Navigator.push(context, _createRoute_2());
-      },
-    );
-
-    _fcm.requestNotificationPermissions(const IosNotificationSettings(
-        sound: true, badge: true, alert: true, provisional: true));
   }
 
   _saveDeviceToken() async {
     // Get the current user
-    String uid = 'kni';
+    //String uid = 'kni';
     //  FirebaseUser user = await _auth.currentUser();
     // Get the token for this device
     fcmtoken = await _fcm.getToken();
@@ -107,6 +149,7 @@ class _DashboardState extends State<Dashboard> {
       } else if (purchaseDetails.status == PurchaseStatus.error) {
         setState(() {
           _purchasePending = false;
+          _handleInvalidPurchase(purchaseDetails);
         });
       } else if (purchaseDetails.status == PurchaseStatus.purchased) {
         bool valid = await _verifyPurchase(purchaseDetails);
@@ -127,7 +170,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   startTime() async {
-    var _duration = new Duration(milliseconds: 500);
+    var _duration = new Duration(seconds: 1);
     return new Timer(_duration, validateSubscription);
   }
 
@@ -154,7 +197,6 @@ class _DashboardState extends State<Dashboard> {
         _purchases = [];
         _notFoundIds = [];
         _purchasePending = false;
-        _loading = false;
         // Scaffold.of(context).showSnackBar(SnackBar(
         //   content: Text('Payment Server Unavailable! Please try again later.'),
         // ));
@@ -172,7 +214,6 @@ class _DashboardState extends State<Dashboard> {
         _purchases = [];
         _notFoundIds = productDetailResponse.notFoundIDs;
         _purchasePending = false;
-        _loading = false;
         print('Error: $_queryProductError');
         // Scaffold.of(context).showSnackBar(SnackBar(
         //     content: Text(
@@ -189,13 +230,14 @@ class _DashboardState extends State<Dashboard> {
         _purchases = [];
         _notFoundIds = productDetailResponse.notFoundIDs;
         _purchasePending = false;
-        _loading = false;
       });
       return;
     }
     QueryPurchaseDetailsResponse purchaseResponse;
     try {
       purchaseResponse = await _connection.queryPastPurchases();
+    } on PlatformException {
+      purchaseResponse = null;
     } catch (e) {
       purchaseResponse = null;
     }
@@ -210,6 +252,9 @@ class _DashboardState extends State<Dashboard> {
     final List<PurchaseDetails> verifiedPurchases = [];
 
     for (PurchaseDetails purchase in purchaseResponse.pastPurchases) {
+      if (purchase.pendingCompletePurchase) {
+        await InAppPurchaseConnection.instance.completePurchase(purchase);
+      }
       if (await _verifyPurchase(purchase)) {
         verifiedPurchases.add(purchase);
       }
@@ -221,7 +266,6 @@ class _DashboardState extends State<Dashboard> {
       _purchases = verifiedPurchases;
       _notFoundIds = productDetailResponse.notFoundIDs;
       _purchasePending = false;
-      _loading = false;
     });
   }
 
@@ -235,10 +279,8 @@ class _DashboardState extends State<Dashboard> {
     updatetime = DateTime.now();
     currencymodel.initalizecurrencydata();
     ApiHelper.getToken("http://zapp.fxsonic.com/api/token");
-    startTime();
     initStoreInfo();
-    validateFreePeriod();
-    setState(() {});
+    startTime();
   }
 
   @override
@@ -249,18 +291,13 @@ class _DashboardState extends State<Dashboard> {
     super.dispose();
   }
 
-  Future<void> validateFreePeriod() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    freePeriodUtilized = (prefs.getBool("free_period_utilized") ?? false);
-  }
-
   Future<void> validateSubscription() async {
     subsciptionActive = await isSubscriptionActive();
 
     if (subsciptionActive) {
       Navigator.pushReplacement(context, _createRoute());
     } else {
-      _subscriptionCheckComplete = true;
+      _loading = false;
       if (this.mounted) {
         setState(() {});
       }
@@ -271,6 +308,8 @@ class _DashboardState extends State<Dashboard> {
     QueryPurchaseDetailsResponse purchaseResponse;
     try {
       purchaseResponse = await _connection.queryPastPurchases();
+    } on PlatformException {
+      purchaseResponse = null;
     } catch (e) {
       purchaseResponse = null;
     }
@@ -298,15 +337,15 @@ class _DashboardState extends State<Dashboard> {
       _purchases.add(purchaseDetails);
       _purchasePending = false;
     });
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool("free_period_utilized", true);
     Navigator.pushReplacement(context, _createRoute());
   }
 
   Future<bool> _verifyPurchase(PurchaseDetails purchaseDetails) async {
-    return Future<bool>.value(true);
-    // String purchaseValidationJson =
-    //     purchaseDetails.verificationData.localVerificationData;
+    String purchaseValidationJsonServer =
+        purchaseDetails.verificationData.serverVerificationData;
+    print("Server $purchaseValidationJsonServer");
+
+    return await ApiHelper().verifyPurchase(purchaseValidationJsonServer);
     // Map<String, dynamic> map = jsonDecode(purchaseValidationJson);
     // await InAppPurchaseConnection.instance.completePurchase(purchaseDetails);
     // if (map['productId'] == _kMonthlySubscriptionId &&
@@ -319,6 +358,7 @@ class _DashboardState extends State<Dashboard> {
 
   void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {
     print('Error: Invalid Purchase');
+
     // Scaffold.of(context).showSnackBar(SnackBar(
     //     content:
     //         Text('Error processing your purchase request. Please try later.')));
@@ -332,160 +372,174 @@ class _DashboardState extends State<Dashboard> {
         // Create an inner BuildContext so that the onPressed methods
         // can refer to the Scaffold with Scaffold.of().
         builder: (BuildContext context) {
-      return Center(
-        child: Stack(alignment: Alignment.topCenter, children: [
-          Column(
-            children: [
-              SizedBox(
-                height: 100 * size.height / 750,
-              ),
-              Text(
-                "Fx Power Meter",
-                style: TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.black87,
-                    fontSize: 37 * size.width / 390,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1),
-              ),
-              //logo
-              Container(
-                  margin: EdgeInsets.only(top: 10, bottom: 30),
-                  width: 330 * size.width / 390,
-                  child: Image(image: AssetImage('assets/logo.png'))),
-              //buttons
-              Container(
-                  child: Column(
-                children: [
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Text(
-                    _subscriptionCheckComplete
-                        ? ((freePeriodUtilized ?? false)
-                            ? "Subscription Expired!"
-                            : freenum.toString() + "-Day Free Trial")
-                        : "Verifying Subscription ...",
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 24 * size.width / 390,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1),
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  _subscriptionCheckComplete
-                      ? Container(
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(50),
-                              gradient: LinearGradient(
-                                  colors: [
-                                    Colors.grey[700],
-                                    Colors.grey[900],
-                                    Colors.grey[700],
-                                  ],
-                                  stops: [
-                                    0.1,
-                                    0.5,
-                                    0.9
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter)),
-                          height: 55 * size.width / 390,
-                          child: RaisedButton(
-                            color: Colors.grey.withAlpha(30),
-                            padding: EdgeInsets.only(
-                                left: 100, right: 100, top: 8, bottom: 8),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(100)),
-                            onPressed: () async {
-                              // Manish
-                              //Navigator.push(context, _createRoute());
-                              // setState(() {
-                              //   showPurchaseWidget = true;
-                              //   print('stRT');
-                              // });
-                              ProductDetails _subscriptionProductDetails;
-                              for (ProductDetails _product in _products) {
-                                if (_product.id == _kMonthlySubscriptionId)
-                                  _subscriptionProductDetails = _product;
-                              }
+      return LoadingOverlay(
+        opacity: 0.5,
+        color: Colors.grey[400],
+        progressIndicator: CircularProgressIndicator(),
+        isLoading: _loading,
+        child: Center(
+          child: Stack(alignment: Alignment.topCenter, children: [
+            Column(
+              children: [
+                SizedBox(
+                  height: 100 * size.height / 750,
+                ),
+                Text(
+                  "Fx Power Meter",
+                  style: TextStyle(
+                      fontFamily: "Montserrat",
+                      color: Colors.black87,
+                      fontSize: 37 * size.width / 390,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1),
+                ),
+                //logo
+                Container(
+                    margin: EdgeInsets.only(top: 10, bottom: 30),
+                    width: 330 * size.width / 390,
+                    child: Image(image: AssetImage('assets/logo.png'))),
+                //buttons
+                Container(
+                    child: Column(
+                  children: [
+                    SizedBox(
+                      height: 10,
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    (!_loading)
+                        ? Container(
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(50),
+                                gradient: LinearGradient(
+                                    colors: [
+                                      Colors.grey[700],
+                                      Colors.grey[900],
+                                      Colors.grey[700],
+                                    ],
+                                    stops: [
+                                      0.1,
+                                      0.5,
+                                      0.9
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter)),
+                            height: 55 * size.width / 390,
+                            child: RaisedButton(
+                              color: Colors.grey.withAlpha(30),
+                              padding: EdgeInsets.only(
+                                  left: 100, right: 100, top: 8, bottom: 8),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(100)),
+                              onPressed: () async {
+                                if (_products == null ||
+                                    _products.length == 0) {
+                                  ProductDetailsResponse productDetailResponse =
+                                      await _connection.queryProductDetails(
+                                          _kProductIds.toSet());
+                                  _products =
+                                      productDetailResponse.productDetails;
+                                }
+                                ProductDetails _subscriptionProductDetails;
+                                for (ProductDetails _product in _products) {
+                                  if (_product.id == _kMonthlySubscriptionId)
+                                    _subscriptionProductDetails = _product;
+                                }
 
-                              if (await isSubscriptionActive()) {
-                              } else {
-                                PurchaseParam purchaseParam = PurchaseParam(
-                                    productDetails: _subscriptionProductDetails,
-                                    applicationUserName: null);
+                                if (await isSubscriptionActive()) {
+                                  Navigator.pushReplacement(
+                                      context, _createRoute());
+                                } else {
+                                  QueryPurchaseDetailsResponse purchaseResponse;
+                                  try {
+                                    purchaseResponse =
+                                        await _connection.queryPastPurchases();
+                                  } on PlatformException {
+                                    purchaseResponse = null;
+                                  } catch (e) {
+                                    purchaseResponse = null;
+                                  }
+                                  for (PurchaseDetails purchase
+                                      in purchaseResponse.pastPurchases) {
+                                    if (purchase.pendingCompletePurchase) {
+                                      await InAppPurchaseConnection.instance
+                                          .completePurchase(purchase);
+                                    }
+                                  }
+                                  PurchaseParam purchaseParam = PurchaseParam(
+                                      productDetails:
+                                          _subscriptionProductDetails,
+                                      applicationUserName: null);
 
-                                _connection.buyNonConsumable(
-                                    purchaseParam: purchaseParam);
-                                print('purchased');
-                              }
-                            },
-                            child: Text(
-                              ((freePeriodUtilized ?? false)
-                                  ? 'Renew now'
-                                  : 'Start'),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28 * size.width / 390,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1),
+                                  if (await _connection.buyNonConsumable(
+                                      purchaseParam: purchaseParam)) {
+                                    print('purchased');
+                                  }
+                                }
+                              },
+                              child: Text(
+                                'Start',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28 * size.width / 390,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1),
+                              ),
                             ),
-                          ),
-                        )
-                      : Text(""),
-                ],
-              ))
-            ],
-          ),
-          Positioned(
-              bottom: 40 * size.height / 750,
-              child: Column(
-                children: [
-                  Text(
-                    "By signing up you agree to",
-                    style: TextStyle(
-                        fontSize: 16 * size.width / 390, letterSpacing: 0.1),
-                    textAlign: TextAlign.center,
-                  ),
-                  Row(
-                    children: [
-                      Text("our ",
-                          style: TextStyle(
-                              fontSize: 16 * size.width / 390,
-                              letterSpacing: 0.1)),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(context, _createRoute_3(5));
-                        },
-                        child: Text("Term of Service",
+                          )
+                        : Text(""),
+                  ],
+                ))
+              ],
+            ),
+            Positioned(
+                bottom: 40 * size.height / 750,
+                child: Column(
+                  children: [
+                    Text(
+                      "By signing up you agree to",
+                      style: TextStyle(
+                          fontSize: 16 * size.width / 390, letterSpacing: 0.1),
+                      textAlign: TextAlign.center,
+                    ),
+                    Row(
+                      children: [
+                        Text("our ",
                             style: TextStyle(
-                                color: Colors.blue,
                                 fontSize: 16 * size.width / 390,
                                 letterSpacing: 0.1)),
-                      ),
-                      Text(" and ",
-                          style: TextStyle(
-                              fontSize: 16 * size.width / 390,
-                              letterSpacing: 0.1)),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(context, _createRoute_3(4));
-                        },
-                        child: Text("Privacy Policy",
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(context, _createRoute_3(5));
+                          },
+                          child: Text("Term of Service",
+                              style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 16 * size.width / 390,
+                                  letterSpacing: 0.1)),
+                        ),
+                        Text(" and ",
                             style: TextStyle(
-                                color: Colors.blue,
                                 fontSize: 16 * size.width / 390,
                                 letterSpacing: 0.1)),
-                      ),
-                    ],
-                  )
-                ],
-              )),
-        ]),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(context, _createRoute_3(4));
+                          },
+                          child: Text("Privacy Policy",
+                              style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 16 * size.width / 390,
+                                  letterSpacing: 0.1)),
+                        ),
+                      ],
+                    )
+                  ],
+                )),
+          ]),
+        ),
       );
     })));
   }

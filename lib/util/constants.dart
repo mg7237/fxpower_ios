@@ -5,3 +5,5 @@ const BASE_URL_DAY = 'http://zapp.fxsonic.com/get_heatmap_day.php?start_time=';
 const BASE_URL_minute = 'http://zapp.fxsonic.com/get_heatmap.php?get_way=';
 const REGISTER_TOKEN = 'http://zapp.fxsonic.com/api/register_token';
 const BASE_URL_TIME = 'http://zapp.fxsonic.com/api/all_time_notification';
+const verifyURL = 'http://zapp.fxsonic.com/store-subscription/index.php';
+const environment = 'TEST';

@@ -69,7 +69,7 @@ class _NotificationscreenState extends State<Notificationscreen> {
         children: [
           Container(
             decoration: BoxDecoration(color: Colors.grey[400]),
-            height: 60,
+            height: 80,
             child: Row(
               children: [
                 Container(

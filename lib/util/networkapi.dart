@@ -191,6 +191,37 @@ class ApiHelper {
       throw err;
     });
   }
-  //
 
+  //
+  Future<bool> verifyPurchase(String receiptData) async {
+    const username = 'zapp';
+    const password = 'sakjdh456*&^';
+    Map<String, String> body = {
+      "platform": "IOS",
+      "env": Constants.environment,
+      "receipt_data": receiptData
+    };
+
+    String basicAuth =
+        'Basic ' + base64Encode(utf8.encode('$username:$password'));
+    print(basicAuth);
+
+    var response = await httpClient.post(Constants.verifyURL,
+        headers: <String, String>{'authorization': basicAuth},
+        body: jsonEncode(body));
+
+    if (response != null && response.statusCode != 200) {
+      print("Error: ${response.statusCode}, ${response.reasonPhrase}");
+      return false;
+    }
+
+    Map<String, dynamic> responseData = jsonDecode(response.body);
+    print('ERR ${responseData["error"]} , ${responseData["is_error"]}');
+    if (responseData["is_error"] != 0) {
+      return false;
+    }
+    if (responseData["subscription_status"] != 1) return false;
+
+    return true;
+  }
 }
