@@ -155,7 +155,7 @@ packages:
       name: in_app_purchase
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.2"
+    version: "0.3.5+1"
   intl:
     dependency: "direct main"
     description:
@@ -176,7 +176,7 @@ packages:
       name: json_annotation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.1"
+    version: "3.1.1"
   loading_overlay:
     dependency: "direct main"
     description:

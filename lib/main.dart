@@ -17,7 +17,7 @@ import 'package:loading_overlay/loading_overlay.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-const String _kMonthlySubscriptionId = 'subscription_monthly';
+const String _kMonthlySubscriptionId = 'iOS_Monthly_Subscription';
 const List<String> _kProductIds = <String>[_kMonthlySubscriptionId];
 //main
 
@@ -108,36 +108,18 @@ class _DashboardState extends State<Dashboard> {
         }
       });
 
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      FirebaseMessaging.onMessageOpenedApp
+          .listen((RemoteMessage message) async {
         print('A new onMessageOpenedApp event was published!');
-        Navigator.push(context, _createRoute_2());
+        if (await isSubscriptionActive()) {
+          Navigator.push(context, _createRoute_2());
+        }
       });
-      // _fcm.configure(
-      //   onMessage: (Map<String, dynamic> message) async {
-      //     print("onMessage: $message");
-      //   },
-      //   onLaunch: (Map<String, dynamic> message) async {
-      //     print("onLaunch: $message");
-      //     Navigator.push(context, _createRoute_2());
-      //   },
-      //   onResume: (Map<String, dynamic> message) async {
-      //     print("onResume: $message");
-      //     Navigator.push(context, _createRoute_2());
-      //   },
-      // );
-
-      // _fcm.requestNotificationPermissions(const IosNotificationSettings(
-      //     sound: true, badge: true, alert: true, provisional: true));
     }
   }
 
   _saveDeviceToken() async {
-    // Get the current user
-    //String uid = 'kni';
-    //  FirebaseUser user = await _auth.currentUser();
-    // Get the token for this device
     fcmtoken = await _fcm.getToken();
-    // Save it to Firestore
   }
 
   void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
@@ -333,10 +315,10 @@ class _DashboardState extends State<Dashboard> {
     if (purchaseDetails.pendingCompletePurchase) {
       await InAppPurchaseConnection.instance.completePurchase(purchaseDetails);
     }
-    setState(() {
-      _purchases.add(purchaseDetails);
-      _purchasePending = false;
-    });
+
+    _purchases.add(purchaseDetails);
+    _purchasePending = false;
+
     Navigator.pushReplacement(context, _createRoute());
   }
 
@@ -356,8 +338,11 @@ class _DashboardState extends State<Dashboard> {
     //   return Future<bool>.value(false);
   }
 
-  void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {
+  void _handleInvalidPurchase(PurchaseDetails purchaseDetails) async {
     print('Error: Invalid Purchase');
+    if (purchaseDetails.pendingCompletePurchase) {
+      await InAppPurchaseConnection.instance.completePurchase(purchaseDetails);
+    }
 
     // Scaffold.of(context).showSnackBar(SnackBar(
     //     content:
