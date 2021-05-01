@@ -78,6 +78,15 @@ List<String> urls = [
   "http://zapp.fxsonic.com/privacy/view",
   "http://zapp.fxsonic.com/term/view"
 ];
+
+List<String> urlsHTML = [
+  "/rate/view",
+  "/support/view",
+  "/about/view",
+  "/share/view",
+  "/privacy/view",
+  "/term/view"
+];
 List<String> menuname = [
   "Rate us",
   "Support",

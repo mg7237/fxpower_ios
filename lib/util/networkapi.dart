@@ -64,7 +64,8 @@ class ApiHelper {
     };
 
     return await httpClient
-        .post(Constants.BASE_URL + url, body: jsonEncode(data), headers: head)
+        .post(Uri.http(Constants.BASE_URI_FIXER, '/api/' + url),
+            body: jsonEncode(data), headers: head)
         .timeout(Duration(seconds: 10))
         .then((value) {
       ResponseModel model = ResponseModel.fromJson(json.decode(value.body));
@@ -76,14 +77,15 @@ class ApiHelper {
     });
   }
 
-  static Future<ResponseModel> getRequest(String url) async {
+  static Future<ResponseModel> getRequest(
+      String baseURL, String path, Map<String, String> params) async {
     Map<String, String> head = {
       "Content-Type": "application/json",
       "accept": "application/json"
     };
 
     return await httpClient
-        .get(url, headers: head)
+        .get(Uri.http(baseURL, path, params), headers: head)
         .timeout(Duration(seconds: 10))
         .then((value) {
       print("get: " + value.body);
@@ -99,7 +101,8 @@ class ApiHelper {
       "accept": "application/json"
     };
 
-    return await httpClient.get(url, headers: head)
+    return await httpClient
+        .get(Uri.http(Constants.BASE_URI, url), headers: head)
         // .timeout(Duration(seconds: 30))
         .then((value) {
       var data = jsonDecode(value.body.substring(3));
@@ -116,7 +119,7 @@ class ApiHelper {
     };
 
     return await httpClient
-        .get(url, headers: head)
+        .get(Uri.http(Constants.BASE_URI, url), headers: head)
         .timeout(Duration(seconds: 10))
         .then((value) {
       return value.body.substring(4, value.body.length - 1);
@@ -125,16 +128,17 @@ class ApiHelper {
     });
   }
 
-  static Future getcurrency_day(String url) async {
+  static Future getcurrency_day(String url, Map<String, String> params) async {
     Map<String, String> head = {
       "Content-Type": "application/json",
       "accept": "application/json"
     };
-
+    print("URT $url");
     return await httpClient
-        .get(url, headers: head)
+        .get(Uri.http(Constants.BASE_URI, url, params), headers: head)
         .timeout(Duration(seconds: 10))
         .then((value) {
+      print("BODY ${value.body}");
       return value.body;
     }).catchError((err) {
       throw err;
@@ -148,7 +152,7 @@ class ApiHelper {
     };
 
     return await httpClient
-        .get(url, headers: head)
+        .get(Uri.http(Constants.BASE_URI, url), headers: head)
         .timeout(Duration(seconds: 10))
         .then((value) {
       return value.body.substring(4, value.body.length - 1);
@@ -164,7 +168,8 @@ class ApiHelper {
     };
 */
     return await httpClient
-        .post(Constants.REGISTER_TOKEN, body: data)
+        .post(Uri.http(Constants.BASE_URI, Constants.REGISTER_TOKEN),
+            body: data)
         .timeout(Duration(seconds: 10))
         .then((value) {
       print(value.body);
@@ -182,7 +187,8 @@ class ApiHelper {
     };
 
     return await httpClient
-        .get(Constants.BASE_URL_TIME, headers: head)
+        .get(Uri.http(Constants.BASE_URI, Constants.BASE_URL_TIME),
+            headers: head)
         .timeout(Duration(seconds: 10))
         .then((value) {
       print(value.body);
@@ -206,7 +212,8 @@ class ApiHelper {
         'Basic ' + base64Encode(utf8.encode('$username:$password'));
     print(basicAuth);
 
-    var response = await httpClient.post(Constants.verifyURL,
+    var response = await httpClient.post(
+        Uri.http(Constants.BASE_URI, Constants.verifyURL),
         headers: <String, String>{'authorization': basicAuth},
         body: jsonEncode(body));
 
@@ -216,7 +223,8 @@ class ApiHelper {
     }
 
     Map<String, dynamic> responseData = jsonDecode(response.body);
-    print('ERR ${responseData["error"]} , ${responseData["is_error"]}');
+    print(
+        'ERR ${responseData["error"]} , ${responseData["subscription_status"]} ,${responseData["is_error"]}');
     if (responseData["is_error"] != 0) {
       return false;
     }

@@ -4,21 +4,21 @@ import "package:currency_ios/screens/screen1.dart";
 import "package:currency_ios/screens/notifications.dart";
 import "package:currency_ios/screens/webview.dart";
 import "package:currency_ios/screens/rateusscreen.dart";
+import "package:currency_ios/util/alert_dialog.dart";
 import 'data/data.dart';
 import 'dart:ui';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:loading_overlay/loading_overlay.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_inapp_purchase/flutter_inapp_purchase.dart';
 
-const String _kMonthlySubscriptionId = 'iOS_Monthly_Subscription';
-const List<String> _kProductIds = <String>[_kMonthlySubscriptionId];
+const String _kMonthlySubscriptionId = 'iOS_Monthly_Sub';
+const List<String> _productLists = <String>[_kMonthlySubscriptionId];
 //main
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -33,7 +33,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  InAppPurchaseConnection.enablePendingPurchases();
   runApp(
       MaterialApp(title: 'distant', debugShowCheckedModeBanner: false, routes: {
     '/': (context) => Dashboard(),
@@ -57,14 +56,118 @@ class _DashboardState extends State<Dashboard> {
   bool iosSubscriptionActive = false;
   String _queryProductError;
   List<String> _notFoundIds = [];
-  List<ProductDetails> _products = [];
-  List<PurchaseDetails> _purchases = [];
 
-  final InAppPurchaseConnection _connection = InAppPurchaseConnection.instance;
+  List<IAPItem> _items = [];
+  List<PurchasedItem> _purchases = [];
+  StreamSubscription _purchaseUpdatedSubscription;
+  StreamSubscription _purchaseErrorSubscription;
+  StreamSubscription _conectionSubscription;
+  String _platformVersion = 'Unknown';
+
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
-  StreamSubscription iosSubscription;
-  StreamSubscription<List<PurchaseDetails>> _subscription;
+  Future<void> initPlatformState() async {
+    String platformVersion;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      platformVersion = await FlutterInappPurchase.instance.platformVersion;
+    } on PlatformException {
+      platformVersion = 'Failed to get platform version.';
+    }
+
+    // prepare
+    var result = await FlutterInappPurchase.instance.initConnection;
+    print('result: $result');
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+
+    setState(() {
+      _platformVersion = platformVersion;
+    });
+
+    // refresh items for android
+    try {
+      String msg = await FlutterInappPurchase.instance.consumeAllItems;
+      print('consumeAllItems: $msg');
+    } catch (err) {
+      print('consumeAllItems error: $err');
+    }
+
+    _conectionSubscription =
+        FlutterInappPurchase.connectionUpdated.listen((connected) {
+      print('connected: $connected');
+    });
+
+    _purchaseUpdatedSubscription =
+        FlutterInappPurchase.purchaseUpdated.listen((productItem) {
+      print('purchase-updated: $productItem');
+      Navigator.pushReplacement(context, _createRoute());
+    });
+
+    _purchaseErrorSubscription =
+        FlutterInappPurchase.purchaseError.listen((purchaseError) {
+      print('purchase-error: $purchaseError');
+
+      AlertDialogs dialog = AlertDialogs(
+          title: purchaseError.code,
+          message: "Error while purchasing: ${purchaseError.message}");
+      dialog.asyncAckAlert(context);
+    });
+
+    await _getProduct();
+
+    await _getPurchases();
+
+    await validateSubscription();
+  }
+
+  void _requestPurchase(IAPItem item, BuildContext context) async {
+    try {
+      await FlutterInappPurchase.instance.requestSubscription(item.productId);
+      print("Success");
+    } catch (e) {
+      _showToast(context, "Error while purchasing: $e");
+    }
+  }
+
+  Future _getProduct() async {
+    _items = [];
+    List<IAPItem> items =
+        await FlutterInappPurchase.instance.getProducts(_productLists);
+    for (var item in items) {
+      print('${item.toString()}');
+      if (item.productId == _kMonthlySubscriptionId) {
+        this._items.add(item);
+      }
+    }
+  }
+
+  Future _getPurchases() async {
+    List<PurchasedItem> items =
+        await FlutterInappPurchase.instance.getAvailablePurchases();
+    for (var item in items) {
+      if (item.productId == _kMonthlySubscriptionId) {
+        print('${item.toString()}');
+        this._purchases.add(item);
+      }
+    }
+  }
+
+  void _showToast(BuildContext context, String message) {
+    final scaffoldMessanger = ScaffoldMessenger.of(context);
+    scaffoldMessanger.showSnackBar(
+      SnackBar(
+        content:
+            Text(message, style: TextStyle(fontSize: 20, color: Colors.white)),
+        backgroundColor: Colors.black,
+        elevation: 10,
+      ),
+    );
+    print('mmm $message');
+  }
 
   void notificationrecieve() async {
     if (Platform.isIOS) {
@@ -122,135 +225,6 @@ class _DashboardState extends State<Dashboard> {
     fcmtoken = await _fcm.getToken();
   }
 
-  void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
-    purchaseDetailsList.forEach((PurchaseDetails purchaseDetails) async {
-      if (purchaseDetails.status == PurchaseStatus.pending) {
-        setState(() {
-          _purchasePending = true;
-        });
-      } else if (purchaseDetails.status == PurchaseStatus.error) {
-        setState(() {
-          _purchasePending = false;
-          _handleInvalidPurchase(purchaseDetails);
-        });
-      } else if (purchaseDetails.status == PurchaseStatus.purchased) {
-        bool valid = await _verifyPurchase(purchaseDetails);
-
-        if (valid) {
-          deliverProduct(purchaseDetails);
-        } else {
-          _handleInvalidPurchase(purchaseDetails);
-          return;
-        }
-      }
-
-      if (purchaseDetails.pendingCompletePurchase) {
-        await InAppPurchaseConnection.instance
-            .completePurchase(purchaseDetails);
-      }
-    });
-  }
-
-  startTime() async {
-    var _duration = new Duration(seconds: 1);
-    return new Timer(_duration, validateSubscription);
-  }
-
-  Future<void> initStoreInfo() async {
-    final Stream<List<PurchaseDetails>> purchaseUpdated =
-        InAppPurchaseConnection.instance.purchaseUpdatedStream;
-    _subscription = purchaseUpdated.listen((purchaseDetailsList) {
-      _listenToPurchaseUpdated(purchaseDetailsList);
-    }, onDone: () {
-      _subscription.cancel();
-    }, onError: (error) {
-      print('Error: $error');
-      // Scaffold.of(context).showSnackBar(SnackBar(
-      //     content: Text(
-      //         'Error processing your purchase request. Please try later.')));
-    });
-
-    final bool isAvailable = await _connection.isAvailable();
-
-    if (!isAvailable) {
-      setState(() {
-        _isAvailable = isAvailable;
-        _products = [];
-        _purchases = [];
-        _notFoundIds = [];
-        _purchasePending = false;
-        // Scaffold.of(context).showSnackBar(SnackBar(
-        //   content: Text('Payment Server Unavailable! Please try again later.'),
-        // ));
-      });
-      return;
-    }
-
-    ProductDetailsResponse productDetailResponse =
-        await _connection.queryProductDetails(_kProductIds.toSet());
-    if (productDetailResponse.error != null) {
-      setState(() {
-        _queryProductError = productDetailResponse.error.message;
-        _isAvailable = isAvailable;
-        _products = productDetailResponse.productDetails;
-        _purchases = [];
-        _notFoundIds = productDetailResponse.notFoundIDs;
-        _purchasePending = false;
-        print('Error: $_queryProductError');
-        // Scaffold.of(context).showSnackBar(SnackBar(
-        //     content: Text(
-        //         'Error retreiving product details! Please try again later.')));
-      });
-      return;
-    }
-
-    if (productDetailResponse.productDetails.isEmpty) {
-      setState(() {
-        _queryProductError = null;
-        _isAvailable = isAvailable;
-        _products = productDetailResponse.productDetails;
-        _purchases = [];
-        _notFoundIds = productDetailResponse.notFoundIDs;
-        _purchasePending = false;
-      });
-      return;
-    }
-    QueryPurchaseDetailsResponse purchaseResponse;
-    try {
-      purchaseResponse = await _connection.queryPastPurchases();
-    } on PlatformException {
-      purchaseResponse = null;
-    } catch (e) {
-      purchaseResponse = null;
-    }
-
-    if (purchaseResponse.error != null) {
-      print('Error: $_queryProductError');
-      // Scaffold.of(context).showSnackBar(SnackBar(
-      //     content: Text(
-      //         'Error retreiving past purchase details! Please try again later.')));
-    }
-
-    final List<PurchaseDetails> verifiedPurchases = [];
-
-    for (PurchaseDetails purchase in purchaseResponse.pastPurchases) {
-      if (purchase.pendingCompletePurchase) {
-        await InAppPurchaseConnection.instance.completePurchase(purchase);
-      }
-      if (await _verifyPurchase(purchase)) {
-        verifiedPurchases.add(purchase);
-      }
-    }
-
-    setState(() {
-      _isAvailable = isAvailable;
-      _products = productDetailResponse.productDetails;
-      _purchases = verifiedPurchases;
-      _notFoundIds = productDetailResponse.notFoundIDs;
-      _purchasePending = false;
-    });
-  }
-
   @override
   void initState() {
     super.initState();
@@ -260,14 +234,16 @@ class _DashboardState extends State<Dashboard> {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     updatetime = DateTime.now();
     currencymodel.initalizecurrencydata();
-    ApiHelper.getToken("http://zapp.fxsonic.com/api/token");
-    initStoreInfo();
-    startTime();
+    ApiHelper.getToken("/api/token");
+    initPlatformState();
   }
 
   @override
   void dispose() {
-    if (iosSubscriptionActive) iosSubscription.cancel();
+    if (_conectionSubscription != null) {
+      _conectionSubscription.cancel();
+      _conectionSubscription = null;
+    }
     //_subscription.cancel();
 
     super.dispose();
@@ -283,70 +259,20 @@ class _DashboardState extends State<Dashboard> {
       if (this.mounted) {
         setState(() {});
       }
+      if (_items.isNotEmpty) {
+        _requestPurchase(_items[0], context);
+      }
     }
   }
 
   Future<bool> isSubscriptionActive() async {
-    QueryPurchaseDetailsResponse purchaseResponse;
-    try {
-      purchaseResponse = await _connection.queryPastPurchases();
-    } on PlatformException {
-      purchaseResponse = null;
-    } catch (e) {
-      purchaseResponse = null;
-    }
-
-    if (purchaseResponse.error != null) {
-      print('Error: ${purchaseResponse.error}');
-    }
-    final List<PurchaseDetails> verifiedPurchases = [];
-    for (PurchaseDetails purchase in purchaseResponse.pastPurchases) {
-      if (await _verifyPurchase(purchase)) {
-        verifiedPurchases.add(purchase);
-        if (purchase.productID == _kMonthlySubscriptionId)
-          return Future<bool>.value(true);
+    if (_purchases.isNotEmpty) {
+      if (await ApiHelper().verifyPurchase(
+          _purchases[_purchases.length - 1].transactionReceipt)) {
+        return true;
       }
     }
-
-    return Future<bool>.value(false);
-  }
-
-  Future<void> deliverProduct(PurchaseDetails purchaseDetails) async {
-    if (purchaseDetails.pendingCompletePurchase) {
-      await InAppPurchaseConnection.instance.completePurchase(purchaseDetails);
-    }
-
-    _purchases.add(purchaseDetails);
-    _purchasePending = false;
-
-    Navigator.pushReplacement(context, _createRoute());
-  }
-
-  Future<bool> _verifyPurchase(PurchaseDetails purchaseDetails) async {
-    String purchaseValidationJsonServer =
-        purchaseDetails.verificationData.serverVerificationData;
-    print("Server $purchaseValidationJsonServer");
-
-    return await ApiHelper().verifyPurchase(purchaseValidationJsonServer);
-    // Map<String, dynamic> map = jsonDecode(purchaseValidationJson);
-    // await InAppPurchaseConnection.instance.completePurchase(purchaseDetails);
-    // if (map['productId'] == _kMonthlySubscriptionId &&
-    //     map['purchaseToken'] != '' &&
-    //     map['purchaseTime'] != '') {
-    //   return Future<bool>.value(true);
-    // } else
-    //   return Future<bool>.value(false);
-  }
-
-  void _handleInvalidPurchase(PurchaseDetails purchaseDetails) async {
-    print('Error: Invalid Purchase');
-    if (purchaseDetails.pendingCompletePurchase) {
-      await InAppPurchaseConnection.instance.completePurchase(purchaseDetails);
-    }
-
-    // Scaffold.of(context).showSnackBar(SnackBar(
-    //     content:
-    //         Text('Error processing your purchase request. Please try later.')));
+    return false;
   }
 
   @override
@@ -418,49 +344,27 @@ class _DashboardState extends State<Dashboard> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(100)),
                               onPressed: () async {
-                                if (_products == null ||
-                                    _products.length == 0) {
-                                  ProductDetailsResponse productDetailResponse =
-                                      await _connection.queryProductDetails(
-                                          _kProductIds.toSet());
-                                  _products =
-                                      productDetailResponse.productDetails;
-                                }
-                                ProductDetails _subscriptionProductDetails;
-                                for (ProductDetails _product in _products) {
-                                  if (_product.id == _kMonthlySubscriptionId)
-                                    _subscriptionProductDetails = _product;
+                                setState(() {
+                                  _loading = true;
+                                });
+                                if (_items == null || _items.length == 0) {
+                                  _getProduct();
                                 }
 
                                 if (await isSubscriptionActive()) {
                                   Navigator.pushReplacement(
                                       context, _createRoute());
                                 } else {
-                                  QueryPurchaseDetailsResponse purchaseResponse;
-                                  try {
-                                    purchaseResponse =
-                                        await _connection.queryPastPurchases();
-                                  } on PlatformException {
-                                    purchaseResponse = null;
-                                  } catch (e) {
-                                    purchaseResponse = null;
-                                  }
-                                  for (PurchaseDetails purchase
-                                      in purchaseResponse.pastPurchases) {
-                                    if (purchase.pendingCompletePurchase) {
-                                      await InAppPurchaseConnection.instance
-                                          .completePurchase(purchase);
+                                  for (var product in _items) {
+                                    if (product.productId ==
+                                        _kMonthlySubscriptionId) {
+                                      _requestPurchase(product, context);
                                     }
                                   }
-                                  PurchaseParam purchaseParam = PurchaseParam(
-                                      productDetails:
-                                          _subscriptionProductDetails,
-                                      applicationUserName: null);
-
-                                  if (await _connection.buyNonConsumable(
-                                      purchaseParam: purchaseParam)) {
-                                    print('purchased');
-                                  }
+                                  setState(() {
+                                    _loading = false;
+                                  });
+                                  print('purchased');
                                 }
                               },
                               child: Text(
@@ -480,7 +384,7 @@ class _DashboardState extends State<Dashboard> {
               ],
             ),
             Positioned(
-                bottom: 40 * size.height / 750,
+                bottom: 40 * size.height / 350,
                 child: Column(
                   children: [
                     Text(
@@ -544,7 +448,7 @@ class _MenulistState extends State<Menulist> {
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
     TextStyle substyle = TextStyle(
-        fontSize: 20, fontFamily: "Montserrat", fontWeight: FontWeight.w600);
+        fontSize: 18, fontFamily: "Montserrat", fontWeight: FontWeight.w500);
     return Drawer(
         child: ListView(children: [
       if (stateflag == 0)

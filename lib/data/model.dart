@@ -114,9 +114,12 @@ class currencymodel {
   }
 
   static getstartrate(reset, int pasttimeid) {
-    ApiHelper.getRequest(
-            BASE_URL + "/latest" + "?access_key=" + ACCESSKEY + BASESTRUCT)
-        .then((data) {
+    Map<String, String> params = {
+      "access_key": ACCESSKEY,
+      "base": "EUR",
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+    };
+    ApiHelper.getRequest(BASE_URI_FIXER, "/api/latest", params).then((data) {
       print(data.rates.AUD);
       currencytypedata[0].startrate = data.rates.EUR;
       currencytypedata[1].startrate = data.rates.NZD;
@@ -150,11 +153,13 @@ class currencymodel {
     else
       lastdate =
           date.subtract(new Duration(days: 365 * notificationtime[pasttimeid]));
-    ApiHelper.getRequest(BASE_URL +
-            DateFormat('yyyy-MM-dd').format(lastdate) +
-            "?access_key=" +
-            ACCESSKEY +
-            BASESTRUCT)
+    Map<String, String> params = {
+      "access_key": ACCESSKEY,
+      "base": "EUR",
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+    };
+    ApiHelper.getRequest(BASE_URI_FIXER,
+            "/api/" + DateFormat('yyyy-MM-dd').format(lastdate), params)
         .then((data) {
       print(data.rates.AUD);
       currencytypedata[0].endrate = data.rates.EUR;
@@ -206,9 +211,12 @@ class currencymodel {
 
 //screen2 getdata and sort
   static getstartrate_2(reset, int pasttimeid, int id) {
-    ApiHelper.getRequest(
-            BASE_URL + "/latest" + "?access_key=" + ACCESSKEY + BASESTRUCT)
-        .then((data) {
+    Map<String, String> params = {
+      "access_key": ACCESSKEY,
+      "base": "EUR",
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+    };
+    ApiHelper.getRequest(BASE_URI_FIXER, "/api/latest", params).then((data) {
       print(data.rates.AUD);
       currencytypedata2[id][0].startrate = data.rates.EUR;
       currencytypedata2[id][1].startrate = data.rates.NZD;
@@ -242,11 +250,13 @@ class currencymodel {
     else
       lastdate =
           date.subtract(new Duration(days: 365 * notificationtime[pasttimeid]));
-    ApiHelper.getRequest(BASE_URL +
-            DateFormat('yyyy-MM-dd').format(lastdate) +
-            "?access_key=" +
-            ACCESSKEY +
-            BASESTRUCT)
+    Map<String, String> params = {
+      "access_key": ACCESSKEY,
+      "base": "EUR",
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+    };
+    ApiHelper.getRequest(BASE_URI_FIXER,
+            "/api/" + DateFormat('yyyy-MM-dd').format(lastdate), params)
         .then((data) {
       print(data.rates.AUD);
       currencytypedata2[id][0].endrate = data.rates.EUR;
@@ -298,8 +308,9 @@ class currencymodel {
   }
 
   static getcurrency_data(reset, int pasttimeid) {
-    if (pasttimeid == 0)
-      ApiHelper.getcurrency_day(BASE_URL_minute + "1mins").then((value) {
+    if (pasttimeid == 0) {
+      Map<String, String> params = {"get_way": "1mins"};
+      ApiHelper.getcurrency_day(BASE_URL_minute, params).then((value) {
         var jvalue = jsonDecode(value);
         currencytypedata[0].endrate =
             double.parse(jvalue["data"]["AUD"]["EUR"]["previous_price"]);
@@ -334,10 +345,12 @@ class currencymodel {
         sortdata();
         reset();
       });
-    else if (pasttimeid < 7)
-      ApiHelper.getcurrency_day(
-              BASE_URL_minute + notificationtimename[pasttimeid])
-          .then((value) {
+    } else if (pasttimeid < 7) {
+      Map<String, String> params = {
+        "get_way": notificationtimename[pasttimeid]
+      };
+
+      ApiHelper.getcurrency_day(BASE_URL_minute, params).then((value) {
         var jvalue = jsonDecode(value);
         currencytypedata[0].endrate =
             double.parse(jvalue["data"]["AUD"]["EUR"]["previous_price"]);
@@ -373,7 +386,7 @@ class currencymodel {
         sortdata();
         reset();
       });
-    else {
+    } else {
       var date = new DateTime.now().toUtc();
       var lastdate;
       if (pasttimeid < 9)
@@ -385,9 +398,10 @@ class currencymodel {
       else
         lastdate = date
             .subtract(new Duration(days: 365 * notificationtime[pasttimeid]));
-      ApiHelper.getcurrency_day(
-              BASE_URL_DAY + DateFormat('yyyy-MM-dd').format(lastdate))
-          .then((value) {
+      Map<String, String> params = {
+        "start_time": DateFormat('yyyy-MM-dd').format(lastdate)
+      };
+      ApiHelper.getcurrency_day(BASE_URL_DAY, params).then((value) {
         print(value);
         var jvalue = jsonDecode(value);
         String t = jvalue["data"]["AUD"]["EUR"]["previous_price"].toString();
@@ -424,8 +438,10 @@ class currencymodel {
   }
 
   static getcurrency_data_2(reset, int pasttimeid, int id) {
-    if (pasttimeid == 0)
-      ApiHelper.getcurrency_day(BASE_URL_minute + "1mins").then((value) {
+    if (pasttimeid == 0) {
+      Map<String, String> params = {"get_way": "1mins"};
+
+      ApiHelper.getcurrency_day(BASE_URL_minute, params).then((value) {
         var jvalue = jsonDecode(value);
         currencytypedata2[id][0].endrate =
             double.parse(jvalue["data"]["AUD"]["EUR"]["previous_price"]);
@@ -460,10 +476,11 @@ class currencymodel {
         sortdata_2(id);
         reset();
       });
-    else if (pasttimeid < 7)
-      ApiHelper.getcurrency_day(
-              BASE_URL_minute + notificationtimename[pasttimeid])
-          .then((value) {
+    } else if (pasttimeid < 7) {
+      Map<String, String> params = {
+        "get_way": notificationtimename[pasttimeid]
+      };
+      ApiHelper.getcurrency_day(BASE_URL_minute, params).then((value) {
         var jvalue = jsonDecode(value);
         currencytypedata2[id][0].endrate =
             double.parse(jvalue["data"]["AUD"]["EUR"]["previous_price"]);
@@ -499,7 +516,7 @@ class currencymodel {
         sortdata_2(id);
         reset();
       });
-    else {
+    } else {
       var date = new DateTime.now().toUtc();
       var lastdate;
       if (pasttimeid < 9)
@@ -511,9 +528,11 @@ class currencymodel {
       else
         lastdate = date
             .subtract(new Duration(days: 365 * notificationtime[pasttimeid]));
-      ApiHelper.getcurrency_day(
-              BASE_URL_DAY + DateFormat('yyyy-MM-dd').format(lastdate))
-          .then((value) {
+
+      Map<String, String> params = {
+        "start_time": DateFormat('yyyy-MM-dd').format(lastdate)
+      };
+      ApiHelper.getcurrency_day(BASE_URL_DAY, params).then((value) {
         print(value);
         var jvalue = jsonDecode(value);
         String t = "";

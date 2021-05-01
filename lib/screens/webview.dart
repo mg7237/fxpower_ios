@@ -43,7 +43,7 @@ class _WebviewscreenState extends State<Webviewscreen> {
             _loadHtmlFromAssets();
           },*/
   _loadHtmlFromAssets() async {
-    String fileText = await ApiHelper.getHtml(urls[id]);
+    String fileText = await ApiHelper.getHtml(urlsHTML[id]);
     String ff = '<html><body>$fileText</html>';
     _controller.loadUrl(Uri.dataFromString('<html><body>$fileText</html>',
             mimeType: 'text/html', encoding: Encoding.getByName('utf-8'))

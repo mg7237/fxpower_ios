@@ -42,7 +42,7 @@ class currencywidget extends StatelessWidget {
               Positioned(
                   child: GestureDetector(
                 child: Container(
-                  width: (size / 2.2) + 4,
+                  width: (size / 2.2) + 15,
                   height: size / 2.2,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
