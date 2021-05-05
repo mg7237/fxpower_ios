@@ -202,7 +202,7 @@ class _DashboardState extends State<Dashboard> {
       iosSubscriptionActive = true;
       _saveDeviceToken();
 
-      _fcm.subscribeToTopic("currencyios");
+      _fcm.subscribeToTopic("currency");
       FirebaseMessaging.instance
           .getInitialMessage()
           .then((RemoteMessage message) {
@@ -258,9 +258,6 @@ class _DashboardState extends State<Dashboard> {
       _loading = false;
       if (this.mounted) {
         setState(() {});
-      }
-      if (_items.isNotEmpty) {
-        _requestPurchase(_items[0], context);
       }
     }
   }
