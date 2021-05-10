@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:currency_ios/data/data.dart';
 import 'package:currency_ios/widgets/customwidgets.dart';
 import 'dart:async';
+import 'package:device_info/device_info.dart';
 
 class Screen1 extends StatefulWidget {
   @override
@@ -20,6 +21,8 @@ class _Screen1State extends State<Screen1> {
   double offsetsize = 0;
   var sidespace = 60.0;
   int screentype = 0;
+  bool ipad = false;
+  Size size;
   void changeid() {
     reset();
     Datafilemanage.saveData(0);
@@ -57,6 +60,7 @@ class _Screen1State extends State<Screen1> {
     }).catchError((err) {
       print(err);
     });
+
     startTimer();
   }
 
@@ -69,18 +73,29 @@ class _Screen1State extends State<Screen1> {
   }
 
   void startTimer() {
-    new Timer.periodic(Duration(minutes: 1), (f) {
+    new Timer.periodic(Duration(minutes: 1), (f) async {
+      await isIpad();
       updatetime = DateTime.now();
       dataupdate();
       ApiHelper.getcurrency_time();
+      reset();
     });
+  }
+
+  Future<void> isIpad() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    IosDeviceInfo info = await deviceInfo.iosInfo;
+    if (info.model.toLowerCase().contains("ipad")) {
+      ipad = true;
+    }
+    return;
   }
 
   // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   // SystemChrome.setEnabledSystemUIOverlays([SystemUiOverlay.bottom]);
   @override
   Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size;
+    size = MediaQuery.of(context).size;
     sidespace = 80 * size.width / 390;
     offsetsize = offsetsize * size.height / 760;
     return Scaffold(
@@ -90,7 +105,7 @@ class _Screen1State extends State<Screen1> {
               centerTitle: true,
               title: Text(
                 "Currency Strength",
-                style: TextStyle(fontSize: 25 * size.width / 390),
+                style: TextStyle(fontSize: 20 * size.width / 390),
               ),
               actions: [
                 IconButton(

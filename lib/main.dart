@@ -235,7 +235,9 @@ class _DashboardState extends State<Dashboard> {
     updatetime = DateTime.now();
     currencymodel.initalizecurrencydata();
     ApiHelper.getToken("/api/token");
-    initPlatformState();
+    Future.delayed(Duration.zero, () {
+      this.initPlatformState();
+    });
   }
 
   @override
@@ -290,7 +292,7 @@ class _DashboardState extends State<Dashboard> {
             Column(
               children: [
                 SizedBox(
-                  height: 100 * size.height / 750,
+                  height: 70 * size.height / 750,
                 ),
                 Text(
                   "Fx Power Meter",
@@ -304,84 +306,113 @@ class _DashboardState extends State<Dashboard> {
                 //logo
                 Container(
                     margin: EdgeInsets.only(top: 10, bottom: 30),
-                    width: 330 * size.width / 390,
+                    width: 300 * size.width / 390,
                     child: Image(image: AssetImage('assets/logo.png'))),
                 //buttons
-                Container(
-                    child: Column(
-                  children: [
-                    SizedBox(
-                      height: 10,
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    (!_loading)
-                        ? Container(
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                                gradient: LinearGradient(
-                                    colors: [
-                                      Colors.grey[700],
-                                      Colors.grey[900],
-                                      Colors.grey[700],
-                                    ],
-                                    stops: [
-                                      0.1,
-                                      0.5,
-                                      0.9
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter)),
-                            height: 55 * size.width / 390,
-                            child: RaisedButton(
-                              color: Colors.grey.withAlpha(30),
-                              padding: EdgeInsets.only(
-                                  left: 100, right: 100, top: 8, bottom: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(100)),
-                              onPressed: () async {
-                                setState(() {
-                                  _loading = true;
-                                });
-                                if (_items == null || _items.length == 0) {
-                                  _getProduct();
-                                }
-
-                                if (await isSubscriptionActive()) {
-                                  Navigator.pushReplacement(
-                                      context, _createRoute());
-                                } else {
-                                  for (var product in _items) {
-                                    if (product.productId ==
-                                        _kMonthlySubscriptionId) {
-                                      _requestPurchase(product, context);
-                                    }
-                                  }
-                                  setState(() {
-                                    _loading = false;
-                                  });
-                                  print('purchased');
-                                }
-                              },
-                              child: Text(
-                                'Start',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28 * size.width / 390,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1),
-                              ),
+                (!_loading)
+                    ? Container(
+                        child: Column(
+                        children: [
+                          Text(
+                            '7-Day Free Trial',
+                            style: TextStyle(
+                              fontFamily: "Montserrat",
+                              fontSize: 21 * size.width / 390,
+                              fontWeight: FontWeight.bold,
                             ),
-                          )
-                        : Text(""),
-                  ],
-                ))
+                          ),
+                          SizedBox(
+                            height: 20,
+                          ),
+                          (!_loading)
+                              ? Container(
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(50),
+                                      gradient: LinearGradient(
+                                          colors: [
+                                            Colors.grey[700],
+                                            Colors.grey[900],
+                                            Colors.grey[700],
+                                          ],
+                                          stops: [
+                                            0.1,
+                                            0.5,
+                                            0.9
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter)),
+                                  height: 55 * size.width / 390,
+                                  child: RaisedButton(
+                                    color: Colors.grey.withAlpha(30),
+                                    padding: EdgeInsets.only(
+                                        left: 100,
+                                        right: 100,
+                                        top: 8,
+                                        bottom: 8),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(100)),
+                                    onPressed: () async {
+                                      setState(() {
+                                        _loading = true;
+                                      });
+                                      if (_items == null ||
+                                          _items.length == 0) {
+                                        _getProduct();
+                                      }
+
+                                      if (await isSubscriptionActive()) {
+                                        Navigator.pushReplacement(
+                                            context, _createRoute());
+                                      } else {
+                                        for (var product in _items) {
+                                          if (product.productId ==
+                                              _kMonthlySubscriptionId) {
+                                            _requestPurchase(product, context);
+                                          }
+                                        }
+                                        setState(() {
+                                          _loading = false;
+                                        });
+                                        print('purchased');
+                                      }
+                                    },
+                                    child: Text(
+                                      'Start',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 28 * size.width / 390,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1),
+                                    ),
+                                  ),
+                                )
+                              : Text(""),
+                          SizedBox(
+                            height: 20,
+                          ),
+                          Text(
+                            "Subscription \$9.99/month",
+                            style: TextStyle(
+                              fontFamily: "Montserrat",
+                              fontSize: 21 * size.width / 390,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text('Cancel at any time',
+                              style: TextStyle(
+                                fontFamily: "Montserrat",
+                                fontSize: 14 * size.width / 390,
+                                fontWeight: FontWeight.bold,
+                              )),
+                        ],
+                      ))
+                    : Text(""),
               ],
             ),
             Positioned(
-                bottom: 40 * size.height / 350,
+                bottom: 10 * size.height / 350,
                 child: Column(
                   children: [
                     Text(

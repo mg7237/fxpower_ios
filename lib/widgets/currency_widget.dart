@@ -5,45 +5,74 @@ import 'package:flutter/material.dart';
 import 'package:currency_ios/screens/screen2.dart';
 import 'package:currency_ios/data/data.dart';
 import 'package:currency_ios/widgets/customwidgets.dart';
+import 'package:device_info/device_info.dart';
 
-class currencywidget extends StatelessWidget {
+class currencywidget extends StatefulWidget {
   final Float degree;
   final double size;
   final int id;
 
   currencywidget({this.degree, Key key, this.size = 350, this.id = 0})
       : super(key: key);
+
+  @override
+  _currencywidgetState createState() => _currencywidgetState();
+}
+
+class _currencywidgetState extends State<currencywidget> {
+  bool ipad = false;
+
+  @override
+  void initState() {
+    super.initState();
+    isIpad();
+  }
+
+  Future<void> isIpad() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    IosDeviceInfo info = await deviceInfo.iosInfo;
+    if (info.model.toLowerCase().contains("ipad")) {
+      ipad = true;
+    }
+    setState(() {});
+    return;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
         margin: EdgeInsets.all(5),
-        height: 130 * size / 170,
+        height: ipad
+            ? 130 * widget.size / 190
+            : 130 * widget.size / 180, // Manish 180 -> 190
         decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(25 * size / 160),
+            borderRadius: BorderRadius.circular(25 * widget.size / 160),
             boxShadow: [
               BoxShadow(
                   color: Colors.grey[200], blurRadius: 40, spreadRadius: 1)
             ]),
         child: Container(
-          transform: Matrix4.translationValues(0, 30.0 * size / 170, 0),
+          transform: Matrix4.translationValues(0, 30.0 * widget.size / 170, 0),
           child: Stack(
             alignment: Alignment.center,
             children: [
               Positioned(
                   child: Container(
-                width: size,
-                height: size,
+                width: widget.size,
+                height: widget.size,
                 child: CustomPaint(
-                  painter: Mypaint(id),
+                  painter: Mypaint(widget.id),
                   child: Container(),
                 ),
               )),
               Positioned(
                   child: GestureDetector(
                 child: Container(
-                  width: (size / 2.2) + 15,
-                  height: size / 2.2,
+                  width: (widget.size / 2.2) + 15,
+                  height: ipad
+                      ? widget.size / 2.5
+                      : widget.size / 2.0, // Manish 2.2 to 2.5
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -51,57 +80,63 @@ class currencywidget extends StatelessWidget {
                         children: [
                           Container(
                               alignment: Alignment.center,
-                              width: 30 * size / 170,
-                              height: 30 * size / 170,
+                              width: 30 * widget.size / 170,
+                              height: 30 * widget.size / 170,
                               margin: EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                  color: currencytypedata[sortsequency[id]]
-                                      .startcolor,
+                                  color:
+                                      currencytypedata[sortsequency[widget.id]]
+                                          .startcolor,
                                   borderRadius: BorderRadius.circular(100)),
                               child: Text(
-                                (id + 1).toString(),
+                                (widget.id + 1).toString(),
                                 style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontFamily: "Montserrat",
                                     color: Colors.white,
-                                    fontSize: 20 * size / 190),
+                                    fontSize: 20 * widget.size / 190),
                               )),
                           Text(
-                            currencytypedata[sortsequency[id]].type,
+                            currencytypedata[sortsequency[widget.id]].type,
                             style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                color: currencytypedata[sortsequency[id]]
+                                color: currencytypedata[sortsequency[widget.id]]
                                     .startcolor,
-                                fontSize: 20 * size / 190),
+                                fontSize: 20 * widget.size / 190),
                           ),
                         ],
                       ),
                       Text(
-                        ((currencytypedata[sortsequency[id]].amount).floor())
+                        ((currencytypedata[sortsequency[widget.id]].amount)
+                                    .floor())
                                 .toString() +
                             "." +
-                            prefix(((currencytypedata[sortsequency[id]].amount *
+                            prefix(((currencytypedata[sortsequency[widget.id]]
+                                            .amount *
                                         1000)
                                     .floor() -
-                                (currencytypedata[sortsequency[id]].amount)
+                                (currencytypedata[sortsequency[widget.id]]
+                                            .amount)
                                         .floor() *
                                     1000)) +
-                            ((currencytypedata[sortsequency[id]].amount * 1000)
+                            ((currencytypedata[sortsequency[widget.id]].amount *
+                                            1000)
                                         .floor() -
-                                    (currencytypedata[sortsequency[id]].amount)
+                                    (currencytypedata[sortsequency[widget.id]]
+                                                .amount)
                                             .floor() *
                                         1000)
                                 .toString(),
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
-                            fontSize: 16 * size / 190),
+                            fontSize: 16 * widget.size / 190),
                       )
                     ],
                   ),
                 ),
                 onTap: () {
-                  cid = sortsequency[id];
+                  cid = sortsequency[widget.id];
                   print(cid.toString());
                   Navigator.push(context, _createRoute());
                 },
@@ -109,13 +144,13 @@ class currencywidget extends StatelessWidget {
               Positioned(
                   child: GestureDetector(
                 child: Container(
-                  width: size / 2.2,
-                  height: size / 2.2,
+                  width: widget.size / 2.2,
+                  height: widget.size / 2.2,
                   decoration:
                       BoxDecoration(borderRadius: BorderRadius.circular(30)),
                 ),
                 onTap: () {
-                  cid = sortsequency[id];
+                  cid = sortsequency[widget.id];
                   print(cid.toString());
                   Navigator.push(context, _createRoute());
                 },
