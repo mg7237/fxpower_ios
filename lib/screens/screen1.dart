@@ -331,7 +331,8 @@ class _Screen1State extends State<Screen1> {
                                     .format(updatetime),
                             style: TextStyle(
                               color: Colors.black,
-                              fontSize: 16,
+                              fontSize: 12 * size.height / 760,
+                              fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),
