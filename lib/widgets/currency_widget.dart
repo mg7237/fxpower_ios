@@ -43,7 +43,7 @@ class _currencywidgetState extends State<currencywidget> {
     return Container(
         margin: EdgeInsets.all(5),
         height: ipad
-            ? 130 * widget.size / 190
+            ? (130 * widget.size / 190) - 2
             : 130 * widget.size / 180, // Manish 180 -> 190
         decoration: BoxDecoration(
             color: Colors.white,
@@ -72,7 +72,7 @@ class _currencywidgetState extends State<currencywidget> {
                   width: (widget.size / 2.2) + 15,
                   height: ipad
                       ? widget.size / 2.5
-                      : widget.size / 2.0, // Manish 2.2 to 2.5
+                      : widget.size / 2.0, // Manish 2.2 to 2.5 and 2.0
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

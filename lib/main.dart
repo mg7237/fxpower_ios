@@ -231,7 +231,7 @@ class _DashboardState extends State<Dashboard> {
 
     notificationrecieve();
     //screen rotation
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
     updatetime = DateTime.now();
     currencymodel.initalizecurrencydata();
     ApiHelper.getToken("/api/token");
@@ -277,6 +277,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIOverlays([SystemUiOverlay.bottom]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     var size = MediaQuery.of(context).size;
     return MaterialApp(home: Scaffold(body: Builder(
         // Create an inner BuildContext so that the onPressed methods

@@ -316,14 +316,14 @@ class _Screen1State extends State<Screen1> {
 
                 //bottom bar
                 Positioned(
-                    bottom: size.width < size.height
-                        ? 18 * size.height / 760
-                        : 10 * size.height / 390,
+                    bottom:
+                        ipad ? 16 * size.height / 760 : 10 * size.height / 390,
                     child: Column(
                       children: [
                         Container(
-                          margin:
-                              EdgeInsets.only(bottom: 6 * size.height / 760),
+                          margin: ipad
+                              ? EdgeInsets.only(bottom: 5 * size.height / 760)
+                              : EdgeInsets.only(bottom: 6 * size.height / 760),
                           width: size.width,
                           child: Text(
                             "Updated: " +
@@ -345,7 +345,7 @@ class _Screen1State extends State<Screen1> {
                                 '1',
                                 style: TextStyle(
                                   color: Colors.black,
-                                  fontSize: 14 * size.height / 760,
+                                  fontSize: 12 * size.height / 760,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -373,7 +373,7 @@ class _Screen1State extends State<Screen1> {
                                 '10',
                                 style: TextStyle(
                                   color: Colors.black,
-                                  fontSize: 14 * size.height / 760,
+                                  fontSize: 12 * size.height / 760,
                                   fontWeight: FontWeight.bold,
                                 ),
                               )
