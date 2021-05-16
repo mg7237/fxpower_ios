@@ -102,15 +102,21 @@ class _DashboardState extends State<Dashboard> {
     });
 
     _purchaseUpdatedSubscription =
-        FlutterInappPurchase.purchaseUpdated.listen((productItem) {
+        FlutterInappPurchase.purchaseUpdated.listen((productItem) async {
       print('purchase-updated: $productItem');
-      Navigator.pushReplacement(context, _createRoute());
+      if (await ApiHelper().verifyPurchase(productItem.transactionReceipt)) {
+        FlutterInappPurchase.instance
+            .finishTransactionIOS(productItem.transactionId);
+        Navigator.pushReplacement(context, _createRoute());
+      }
     });
 
     _purchaseErrorSubscription =
         FlutterInappPurchase.purchaseError.listen((purchaseError) {
       print('purchase-error: $purchaseError');
-
+      setState(() {
+        _loading = false;
+      });
       AlertDialogs dialog = AlertDialogs(
           title: purchaseError.code,
           message: "Error while purchasing: ${purchaseError.message}");
@@ -372,9 +378,6 @@ class _DashboardState extends State<Dashboard> {
                                             _requestPurchase(product, context);
                                           }
                                         }
-                                        setState(() {
-                                          _loading = false;
-                                        });
                                         print('purchased');
                                       }
                                     },

@@ -44,7 +44,7 @@ class _currencywidgetState extends State<currencywidget> {
         margin: EdgeInsets.all(5),
         height: ipad
             ? (130 * widget.size / 190) - 5
-            : 130 * widget.size / 180, // Manish 180 -> 190
+            : 130 * widget.size / 150, // Manish 180 -> 175
         decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(25 * widget.size / 160),
