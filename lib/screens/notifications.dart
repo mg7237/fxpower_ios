@@ -40,9 +40,8 @@ class _NotificationscreenState extends State<Notificationscreen> {
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
-    TextStyle substyle_1 =
-        TextStyle(fontSize: 15 * size.width / 390, fontWeight: FontWeight.bold);
-    TextStyle substyle_2 = TextStyle(fontSize: 16 * size.width / 390);
+    TextStyle substyle_1 = TextStyle(fontSize: 13 * size.width / 390);
+    TextStyle substyle_2 = TextStyle(fontSize: 15 * size.width / 390);
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: PreferredSize(
@@ -51,7 +50,7 @@ class _NotificationscreenState extends State<Notificationscreen> {
             centerTitle: true,
             title: Text(
               "Strongest & Weakest",
-              style: TextStyle(fontSize: 25 * size.width / 390),
+              style: TextStyle(fontSize: 20 * size.width / 390),
             ),
             flexibleSpace: Container(
               decoration: BoxDecoration(

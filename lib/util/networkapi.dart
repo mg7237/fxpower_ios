@@ -57,25 +57,25 @@ class Data {
 }
 
 class ApiHelper {
-  static Future<ResponseModel> postRequest(
-      String url, Map<String, dynamic> data) async {
-    Map<String, String> head = {
-      "Content-Type": "application/json",
-    };
+  // static Future<ResponseModel> postRequest(
+  //     String url, Map<String, dynamic> data) async {
+  //   Map<String, String> head = {
+  //     "Content-Type": "application/json",
+  //   };
 
-    return await httpClient
-        .post(Uri.http(Constants.BASE_URI_FIXER, '/api/' + url),
-            body: jsonEncode(data), headers: head)
-        .timeout(Duration(seconds: 10))
-        .then((value) {
-      ResponseModel model = ResponseModel.fromJson(json.decode(value.body));
-      print("RESPONSE_MODEL");
-      return model;
-    }).catchError((err) {
-      print('Response Error:' + err.toString());
-      throw err;
-    });
-  }
+  //   return await httpClient
+  //       .post(Uri.http(Constants.BASE_URI_FIXER, '/api/' + url),
+  //           body: jsonEncode(data), headers: head)
+  //       .timeout(Duration(seconds: 10))
+  //       .then((value) {
+  //     ResponseModel model = ResponseModel.fromJson(json.decode(value.body));
+  //     print("RESPONSE_MODEL");
+  //     return model;
+  //   }).catchError((err) {
+  //     print('Response Error:' + err.toString());
+  //     throw err;
+  //   });
+  // }
 
   static Future<ResponseModel> getRequest(
       String baseURL, String path, Map<String, String> params) async {

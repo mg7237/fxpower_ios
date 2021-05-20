@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:currency_ios/util/networkapi.dart';
 import 'package:currency_ios/util/constants.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as httpClient;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class currencymodel {
@@ -117,10 +118,10 @@ class currencymodel {
     Map<String, String> params = {
       "access_key": ACCESSKEY,
       "base": "EUR",
-      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD",
+      "rate_date": "latest"
     };
-    ApiHelper.getRequest(BASE_URI_FIXER, "/api/latest", params).then((data) {
-      print(data.rates.AUD);
+    ApiHelper.getRequest(BASE_URI, "/fx_rates_eur", params).then((data) {
       currencytypedata[0].startrate = data.rates.EUR;
       currencytypedata[1].startrate = data.rates.NZD;
       currencytypedata[2].startrate = data.rates.CHF;
@@ -156,11 +157,10 @@ class currencymodel {
     Map<String, String> params = {
       "access_key": ACCESSKEY,
       "base": "EUR",
-      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD",
+      "rate_date": DateFormat('yyyy-MM-dd').format(lastdate)
     };
-    ApiHelper.getRequest(BASE_URI_FIXER,
-            "/api/" + DateFormat('yyyy-MM-dd').format(lastdate), params)
-        .then((data) {
+    ApiHelper.getRequest(BASE_URI, "/fx_rates_eur", params).then((data) {
       print(data.rates.AUD);
       currencytypedata[0].endrate = data.rates.EUR;
       currencytypedata[1].endrate = data.rates.NZD;
@@ -210,26 +210,33 @@ class currencymodel {
   }
 
 //screen2 getdata and sort
-  static getstartrate_2(reset, int pasttimeid, int id) {
+  static getstartrate_2(reset, int pasttimeid, int id) async {
     Map<String, String> params = {
       "access_key": ACCESSKEY,
       "base": "EUR",
-      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD",
+      "rate_date": "latest"
     };
-    ApiHelper.getRequest(BASE_URI_FIXER, "/api/latest", params).then((data) {
-      print(data.rates.AUD);
-      currencytypedata2[id][0].startrate = data.rates.EUR;
-      currencytypedata2[id][1].startrate = data.rates.NZD;
-      currencytypedata2[id][2].startrate = data.rates.CHF;
-      currencytypedata2[id][3].startrate = data.rates.JPY;
-      currencytypedata2[id][4].startrate = data.rates.CAD;
-      currencytypedata2[id][5].startrate = data.rates.GBP;
-      currencytypedata2[id][6].startrate = data.rates.USD;
-      currencytypedata2[id][7].startrate = data.rates.AUD;
-      getendrate_2(reset, pasttimeid, id);
-    }).catchError((err) {
-      print(err);
-    });
+
+    try {
+      httpClient.Response $response =
+          await httpClient.get(Uri.http(BASE_URI, "/fx_rates_eur", params));
+      if ($response.statusCode == 200) {
+        var jsonResponse = jsonDecode($response.body) as Map<String, dynamic>;
+
+        currencytypedata2[id][0].startrate = jsonResponse["rates"]["EUR"];
+        currencytypedata2[id][1].startrate = jsonResponse["rates"]["NZD"];
+        currencytypedata2[id][2].startrate = jsonResponse["rates"]["CHF"];
+        currencytypedata2[id][3].startrate = jsonResponse["rates"]["JPY"];
+        currencytypedata2[id][4].startrate = jsonResponse["rates"]["CAD"];
+        currencytypedata2[id][5].startrate = jsonResponse["rates"]["GBP"];
+        currencytypedata2[id][6].startrate = jsonResponse["rates"]["USD"];
+        currencytypedata2[id][7].startrate = jsonResponse["rates"]["AUD"];
+        getendrate_2(reset, pasttimeid, id);
+      }
+    } catch (e) {
+      print(e);
+    }
   }
 
   static getendrate_2(reset, int pasttimeid, int id) {
@@ -253,11 +260,10 @@ class currencymodel {
     Map<String, String> params = {
       "access_key": ACCESSKEY,
       "base": "EUR",
-      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD"
+      "symbols": "AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD",
+      "rate_date": DateFormat('yyyy-MM-dd').format(lastdate)
     };
-    ApiHelper.getRequest(BASE_URI_FIXER,
-            "/api/" + DateFormat('yyyy-MM-dd').format(lastdate), params)
-        .then((data) {
+    ApiHelper.getRequest(BASE_URI, "/fx_rates_eur", params).then((data) {
       print(data.rates.AUD);
       currencytypedata2[id][0].endrate = data.rates.EUR;
       currencytypedata2[id][1].endrate = data.rates.NZD;

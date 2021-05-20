@@ -41,7 +41,7 @@ class _Screen2State extends State<Screen2> {
             currencytypedata[cid].type + ": Strength History",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,

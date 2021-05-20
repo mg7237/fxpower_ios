@@ -126,7 +126,7 @@ class _DashboardState extends State<Dashboard> {
     await _getProduct();
 
     await _getPurchases();
-
+    // VALIDATE
     await validateSubscription();
   }
 

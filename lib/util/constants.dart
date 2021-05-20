@@ -1,7 +1,7 @@
 const String BASE_URI_FIXER = "data.fixer.io";
 String ACCESSKEY = "d4b534b1d977f34d6e1f2df54af6c995";
 const BASESTRUCT = "&base=EUR&symbols=AUD,CAD,CHF,EUR,GBP,JPY,NZD,USD";
-const BASE_URL_DAY = '/get_heatmap_day.php'; // start_time=';
+const BASE_URL_DAY = '/get_heatmap_day_new.php'; // start_time=';
 const BASE_URL_minute = '/get_heatmap.php'; // ?get_way=';
 const REGISTER_TOKEN = '/api/register_token';
 const BASE_URL_TIME = '/api/all_time_notification';
