@@ -17,7 +17,7 @@ import 'package:loading_overlay/loading_overlay.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_inapp_purchase/flutter_inapp_purchase.dart';
 
-const String _kMonthlySubscriptionId = 'iOS_Monthly_Sub';
+const String _kMonthlySubscriptionId = 'AUTO_MTHLY';
 const List<String> _productLists = <String>[_kMonthlySubscriptionId];
 //main
 
@@ -104,10 +104,10 @@ class _DashboardState extends State<Dashboard> {
     _purchaseUpdatedSubscription =
         FlutterInappPurchase.purchaseUpdated.listen((productItem) async {
       print('purchase-updated: $productItem');
-      if (await ApiHelper().verifyPurchase(productItem.transactionReceipt)) {
+      if (await ApiHelper.verifyPurchase(productItem.transactionReceipt)) {
         FlutterInappPurchase.instance
             .finishTransactionIOS(productItem.transactionId);
-        Navigator.pushReplacement(context, _createRoute());
+        Navigator.push(context, _createRoute());
       }
     });
 
@@ -135,7 +135,8 @@ class _DashboardState extends State<Dashboard> {
       await FlutterInappPurchase.instance.requestSubscription(item.productId);
       print("Success");
     } catch (e) {
-      _showToast(context, "Error while purchasing: $e");
+      print("Error while purchasing: $e");
+      //_showToast(context, "Error while purchasing: $e");
     }
   }
 
@@ -162,18 +163,18 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
-  void _showToast(BuildContext context, String message) {
-    final scaffoldMessanger = ScaffoldMessenger.of(context);
-    scaffoldMessanger.showSnackBar(
-      SnackBar(
-        content:
-            Text(message, style: TextStyle(fontSize: 20, color: Colors.white)),
-        backgroundColor: Colors.black,
-        elevation: 10,
-      ),
-    );
-    print('mmm $message');
-  }
+  // void _showToast(BuildContext context, String message) {
+  //   final scaffoldMessanger = ScaffoldMessenger.of(context);
+  //   scaffoldMessanger.showSnackBar(
+  //     SnackBar(
+  //       content:
+  //           Text(message, style: TextStyle(fontSize: 20, color: Colors.white)),
+  //       backgroundColor: Colors.black,
+  //       elevation: 10,
+  //     ),
+  //   );
+  //   print('mmm $message');
+  // }
 
   void notificationrecieve() async {
     if (Platform.isIOS) {
@@ -211,9 +212,16 @@ class _DashboardState extends State<Dashboard> {
       _fcm.subscribeToTopic("currency");
       FirebaseMessaging.instance
           .getInitialMessage()
-          .then((RemoteMessage message) {
+          .then((RemoteMessage message) async {
         if (message != null) {
-          Navigator.push(context, _createRoute_2());
+          if (await isSubscriptionActive()) {
+            print("Subscription active");
+            openFromNotification = true;
+
+            Navigator.push(context, _createRoute_2());
+          } else {
+            print("Subscription not active");
+          }
         }
       });
 
@@ -221,6 +229,8 @@ class _DashboardState extends State<Dashboard> {
           .listen((RemoteMessage message) async {
         print('A new onMessageOpenedApp event was published!');
         if (await isSubscriptionActive()) {
+          print("Subscription active");
+          openFromNotification = true;
           Navigator.push(context, _createRoute_2());
         }
       });
@@ -261,7 +271,7 @@ class _DashboardState extends State<Dashboard> {
     subsciptionActive = await isSubscriptionActive();
 
     if (subsciptionActive) {
-      Navigator.pushReplacement(context, _createRoute());
+      Navigator.push(context, _createRoute());
     } else {
       _loading = false;
       if (this.mounted) {
@@ -271,13 +281,19 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<bool> isSubscriptionActive() async {
-    if (_purchases.isNotEmpty) {
-      if (await ApiHelper().verifyPurchase(
-          _purchases[_purchases.length - 1].transactionReceipt)) {
-        return true;
+    if (_purchases.length == 0) {
+      await _getPurchases();
+      if (_purchases.length == 0) {
+        return Future<bool>.value(false);
       }
     }
-    return false;
+
+    for (PurchasedItem purchase in _purchases) {
+      if (await ApiHelper.verifyPurchase(purchase.transactionReceipt)) {
+        return Future<bool>.value(true);
+      }
+    }
+    return Future<bool>.value(false);
   }
 
   @override
@@ -285,11 +301,9 @@ class _DashboardState extends State<Dashboard> {
     SystemChrome.setEnabledSystemUIOverlays([SystemUiOverlay.bottom]);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     var size = MediaQuery.of(context).size;
-    return MaterialApp(home: Scaffold(body: Builder(
-        // Create an inner BuildContext so that the onPressed methods
-        // can refer to the Scaffold with Scaffold.of().
-        builder: (BuildContext context) {
-      return LoadingOverlay(
+
+    return Material(
+      child: LoadingOverlay(
         opacity: 0.5,
         color: Colors.grey[400],
         progressIndicator: CircularProgressIndicator(),
@@ -369,8 +383,7 @@ class _DashboardState extends State<Dashboard> {
                                       }
 
                                       if (await isSubscriptionActive()) {
-                                        Navigator.pushReplacement(
-                                            context, _createRoute());
+                                        Navigator.push(context, _createRoute());
                                       } else {
                                         for (var product in _items) {
                                           if (product.productId ==
@@ -397,10 +410,10 @@ class _DashboardState extends State<Dashboard> {
                             height: 20,
                           ),
                           Text(
-                            "Subscription \$9.99/month",
+                            "Subscription CAD 12.99/month",
                             style: TextStyle(
                               fontFamily: "Montserrat",
-                              fontSize: 21 * size.width / 390,
+                              fontSize: 19 * size.width / 390,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -461,8 +474,8 @@ class _DashboardState extends State<Dashboard> {
                 )),
           ]),
         ),
-      );
-    })));
+      ),
+    );
   }
 }
 

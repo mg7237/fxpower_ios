@@ -3,6 +3,7 @@ import 'package:currency_ios/data/model.dart';
 import 'package:currency_ios/util/networkapi.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
+import "package:currency_ios/screens/notifications.dart";
 import 'package:currency_ios/widgets/currency_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:currency_ios/data/data.dart';
@@ -47,21 +48,7 @@ class _Screen1State extends State<Screen1> {
 
   // ignore: must_call_super
   void initState() {
-    loaddata().then((value) {
-      currencymodel.getcurrency_data(reset, cupdate[0]);
-    });
-    for (int i = 0; i < notificationtimename.length; i++) {
-      currencymodel.getcurrency_data_2(reset, i, i + 4);
-    }
-    ApiHelper.getcurrency_time().then((value) {
-      // value = "'" + value + "'";
-      s_w_data = jsonDecode(value);
-      print(s_w_data[0]["last_time"]);
-    }).catchError((err) {
-      print(err);
-    });
-
-    startTimer();
+    initDataLoad();
   }
 
   dataupdate() {
@@ -69,17 +56,63 @@ class _Screen1State extends State<Screen1> {
   }
 
   reset() {
-    setState(() {});
+    if (this.mounted) {
+      setState(() {});
+    }
   }
 
-  void startTimer() {
+  void initDataLoad() async {
+    await loaddata().then((value) {
+      currencymodel.getcurrency_data(reset, cupdate[0]);
+    });
+    for (int i = 0; i < notificationtimename.length; i++) {
+      await currencymodel.getcurrency_data_2(reset, i, i + 4);
+    }
+
+    await ApiHelper.getcurrency_time().then((value) {
+      // value = "'" + value + "'";
+      s_w_data = jsonDecode(value);
+      print(s_w_data[0]["last_time"]);
+    }).catchError((err) {
+      print(err);
+    });
+    startTimer();
+  }
+
+  void startTimer() async {
+    await isIpad();
+    Future.delayed(const Duration(seconds: 1), () {
+      if (openFromNotification) {
+        openFromNotification = false;
+        Navigator.push(context, _createRoute_2());
+      }
+    });
+
     new Timer.periodic(Duration(minutes: 1), (f) async {
-      await isIpad();
       updatetime = DateTime.now();
       dataupdate();
-      ApiHelper.getcurrency_time();
+      //ApiHelper.getcurrency_time();
       reset();
     });
+  }
+
+  Route _createRoute_2() {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          Notificationscreen(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        var begin = Offset(1.0, 0);
+        var end = Offset.zero;
+        var curve = Curves.easeInOut;
+
+        var tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
+    );
   }
 
   Future<void> isIpad() async {

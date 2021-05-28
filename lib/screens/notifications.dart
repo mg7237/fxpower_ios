@@ -33,7 +33,9 @@ class _NotificationscreenState extends State<Notificationscreen> {
 
   void startTimer() {
     new Timer.periodic(Duration(minutes: 1), (f) {
-      setState(() {});
+      if (this.mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -47,6 +49,10 @@ class _NotificationscreenState extends State<Notificationscreen> {
       appBar: PreferredSize(
           preferredSize: Size.fromHeight(60),
           child: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_sharp),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
             centerTitle: true,
             title: Text(
               "Strongest & Weakest",

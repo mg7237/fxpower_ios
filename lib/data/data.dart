@@ -140,6 +140,6 @@ List<String> s_w_times = [
   '',
 ];
 var s_w_data = null;
-
+bool openFromNotification = false;
 //review
 List<ReviewModel> reviewdata = [];

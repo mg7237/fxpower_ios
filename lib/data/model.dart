@@ -313,7 +313,7 @@ class currencymodel {
     }
   }
 
-  static getcurrency_data(reset, int pasttimeid) {
+  static getcurrency_data(reset, int pasttimeid) async {
     if (pasttimeid == 0) {
       Map<String, String> params = {"get_way": "1mins"};
       ApiHelper.getcurrency_day(BASE_URL_minute, params).then((value) {
@@ -443,7 +443,7 @@ class currencymodel {
     }
   }
 
-  static getcurrency_data_2(reset, int pasttimeid, int id) {
+  static getcurrency_data_2(reset, int pasttimeid, int id) async {
     if (pasttimeid == 0) {
       Map<String, String> params = {"get_way": "1mins"};
 

@@ -199,7 +199,7 @@ class ApiHelper {
   }
 
   //
-  Future<bool> verifyPurchase(String receiptData) async {
+  static Future<bool> verifyPurchase(String receiptData) async {
     const username = 'zapp';
     const password = 'sakjdh456*&^';
     Map<String, String> body = {"platform": "IOS", "receipt_data": receiptData};
