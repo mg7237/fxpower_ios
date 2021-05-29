@@ -410,7 +410,7 @@ class _DashboardState extends State<Dashboard> {
                             height: 20,
                           ),
                           Text(
-                            "Subscription CAD 12.99/month",
+                            "Subscription \$9.99 USD/Month",
                             style: TextStyle(
                               fontFamily: "Montserrat",
                               fontSize: 19 * size.width / 390,
