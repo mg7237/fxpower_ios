@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>767717240575-mhihst3efbuukgrvc2b465e760gkbjmi.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.767717240575-mhihst3efbuukgrvc2b465e760gkbjmi</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>767717240575-4cdiqksaq4lms24acnmtn18qt1ni9fhl.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyACTEp2XgkuhJzccTr1y0dDk3hjEE6otdM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>767717240575</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.zalonix.fxcurrencystrength</string>
+	<key>PROJECT_ID</key>
+	<string>currencyapp-4a060</string>
+	<key>STORAGE_BUCKET</key>
+	<string>currencyapp-4a060.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:767717240575:ios:dd7e26fff65425210c66ca</string>
+	<key>DATABASE_URL</key>
+	<string>https://currencyapp-4a060.firebaseio.com</string>
+</dict>
+</plist>

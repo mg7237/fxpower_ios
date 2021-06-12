@@ -16,6 +16,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_inapp_purchase/flutter_inapp_purchase.dart';
+import 'package:device_info/device_info.dart';
 
 const String _kMonthlySubscriptionId = 'AUTO_MTHLY';
 const List<String> _productLists = <String>[_kMonthlySubscriptionId];
@@ -54,6 +55,7 @@ class _DashboardState extends State<Dashboard> {
   bool _purchasePending = false;
   bool _loading = true;
   bool iosSubscriptionActive = false;
+  bool ipad = false;
   String _queryProductError;
   List<String> _notFoundIds = [];
 
@@ -107,6 +109,7 @@ class _DashboardState extends State<Dashboard> {
       if (await ApiHelper.verifyPurchase(productItem.transactionReceipt)) {
         FlutterInappPurchase.instance
             .finishTransactionIOS(productItem.transactionId);
+
         Navigator.push(context, _createRoute());
       }
     });
@@ -159,22 +162,11 @@ class _DashboardState extends State<Dashboard> {
       if (item.productId == _kMonthlySubscriptionId) {
         print('${item.toString()}');
         this._purchases.add(item);
+        print(item.transactionStateIOS);
+        print("STOP");
       }
     }
   }
-
-  // void _showToast(BuildContext context, String message) {
-  //   final scaffoldMessanger = ScaffoldMessenger.of(context);
-  //   scaffoldMessanger.showSnackBar(
-  //     SnackBar(
-  //       content:
-  //           Text(message, style: TextStyle(fontSize: 20, color: Colors.white)),
-  //       backgroundColor: Colors.black,
-  //       elevation: 10,
-  //     ),
-  //   );
-  //   print('mmm $message');
-  // }
 
   void notificationrecieve() async {
     if (Platform.isIOS) {
@@ -244,10 +236,8 @@ class _DashboardState extends State<Dashboard> {
   @override
   void initState() {
     super.initState();
-
+    isIpad();
     notificationrecieve();
-    //screen rotation
-
     updatetime = DateTime.now();
     currencymodel.initalizecurrencydata();
     ApiHelper.getToken("/api/token");
@@ -265,6 +255,15 @@ class _DashboardState extends State<Dashboard> {
     //_subscription.cancel();
 
     super.dispose();
+  }
+
+  Future<void> isIpad() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    IosDeviceInfo info = await deviceInfo.iosInfo;
+    if (info.model.toLowerCase().contains("ipad")) {
+      ipad = true;
+    }
+    return;
   }
 
   Future<void> validateSubscription() async {
@@ -287,13 +286,15 @@ class _DashboardState extends State<Dashboard> {
         return Future<bool>.value(false);
       }
     }
+    print('Length' + _purchases.length.toString());
+    return await ApiHelper.verifyPurchase(_purchases[0].transactionReceipt);
 
-    for (PurchasedItem purchase in _purchases) {
-      if (await ApiHelper.verifyPurchase(purchase.transactionReceipt)) {
-        return Future<bool>.value(true);
-      }
-    }
-    return Future<bool>.value(false);
+    // for (PurchasedItem purchase in _purchases) {
+    //   if (await ApiHelper.verifyPurchase(purchase.transactionReceipt)) {
+    //     return Future<bool>.value(true);
+    //   }
+    // }
+    // return Future<bool>.value(false);
   }
 
   @override
@@ -313,7 +314,8 @@ class _DashboardState extends State<Dashboard> {
             Column(
               children: [
                 SizedBox(
-                  height: 70 * size.height / 750,
+                  height:
+                      ipad ? 40 * size.height / 750 : 50 * size.height / 750,
                 ),
                 Text(
                   "Fx Power Meter",
@@ -326,8 +328,11 @@ class _DashboardState extends State<Dashboard> {
                 ),
                 //logo
                 Container(
-                    margin: EdgeInsets.only(top: 10, bottom: 30),
-                    width: 300 * size.width / 390,
+                    margin: ipad
+                        ? EdgeInsets.only(top: 10, bottom: 15)
+                        : EdgeInsets.only(top: 10, bottom: 20),
+                    width:
+                        ipad ? 230 * size.width / 390 : 300 * size.width / 390,
                     child: Image(image: AssetImage('assets/logo.png'))),
                 //buttons
                 (!_loading)
@@ -335,15 +340,15 @@ class _DashboardState extends State<Dashboard> {
                         child: Column(
                         children: [
                           Text(
-                            '7-Day Free Trial',
+                            'Get 7-Day Free Trial',
                             style: TextStyle(
                               fontFamily: "Montserrat",
-                              fontSize: 21 * size.width / 390,
+                              fontSize: 20 * size.width / 390,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           SizedBox(
-                            height: 20,
+                            height: 15,
                           ),
                           (!_loading)
                               ? Container(
@@ -366,10 +371,7 @@ class _DashboardState extends State<Dashboard> {
                                   child: RaisedButton(
                                     color: Colors.grey.withAlpha(30),
                                     padding: EdgeInsets.only(
-                                        left: 100,
-                                        right: 100,
-                                        top: 8,
-                                        bottom: 8),
+                                        left: 75, right: 75, top: 8, bottom: 8),
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
                                             BorderRadius.circular(100)),
@@ -382,96 +384,149 @@ class _DashboardState extends State<Dashboard> {
                                         _getProduct();
                                       }
 
-                                      if (await isSubscriptionActive()) {
-                                        Navigator.push(context, _createRoute());
-                                      } else {
-                                        for (var product in _items) {
-                                          if (product.productId ==
-                                              _kMonthlySubscriptionId) {
-                                            _requestPurchase(product, context);
-                                          }
+                                      for (var product in _items) {
+                                        if (product.productId ==
+                                            _kMonthlySubscriptionId) {
+                                          _requestPurchase(product, context);
                                         }
                                         print('purchased');
                                       }
                                     },
                                     child: Text(
-                                      'Start',
+                                      'Subscribe',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 28 * size.width / 390,
-                                          fontWeight: FontWeight.bold,
                                           letterSpacing: 1),
                                     ),
                                   ),
                                 )
                               : Text(""),
                           SizedBox(
-                            height: 20,
+                            height: 15,
                           ),
                           Text(
-                            "Subscription \$9.99 USD/Month",
+                            "Then \$9.99 USD/Month",
                             style: TextStyle(
                               fontFamily: "Montserrat",
-                              fontSize: 19 * size.width / 390,
+                              fontSize: 20 * size.width / 390,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text('Cancel at any time',
-                              style: TextStyle(
-                                fontFamily: "Montserrat",
-                                fontSize: 14 * size.width / 390,
-                                fontWeight: FontWeight.bold,
-                              )),
+                          SizedBox(
+                            height: ipad ? 15 : 20,
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Center(
+                              child: Text(
+                                "After 7 days free trial, payment will be charged \$9.99 USD automatically each month to your Apple ID account unless it is cancelled no later than 24 hours prior to the renewal date. You can cancel automatic renewal or manage your subscription anytime by going to your Account Settings on the App Store.",
+                                textAlign: TextAlign.justify,
+                                style: TextStyle(
+                                  fontFamily: "Montserrat",
+                                  fontSize: ipad
+                                      ? 12 * size.width / 390
+                                      : 13 * size.width / 390,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: ipad ? 15 : 20,
+                          ),
+                          GestureDetector(
+                            onTap: () async {
+                              if (await isSubscriptionActive()) {
+                                print("True");
+                                Navigator.push(context, _createRoute());
+                              } else {
+                                print("False");
+                                AlertDialogs dialog = AlertDialogs(
+                                    title: "NO_SUBSCRIPTION",
+                                    message:
+                                        "Invalid subscription, please subscribe to get access to the APP content");
+                                await dialog.asyncAckAlert(context);
+                              }
+                            },
+                            child: Text("Restore Purchases",
+                                style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: ipad
+                                        ? 13 * size.width / 390
+                                        : 15 * size.width / 390,
+                                    letterSpacing: 0.1)),
+                          ),
+                          SizedBox(
+                            height: ipad ? 15 : 30,
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                "By signing up you agree to",
+                                style: TextStyle(
+                                    fontSize: ipad
+                                        ? 13 * size.width / 390
+                                        : 15 * size.width / 390,
+                                    letterSpacing: 0.1),
+                                textAlign: TextAlign.center,
+                              ),
+                              Container(
+                                width: size.width,
+                                child: Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text("our ",
+                                          style: TextStyle(
+                                              fontSize: ipad
+                                                  ? 13 * size.width / 390
+                                                  : 15 * size.width / 390,
+                                              letterSpacing: 0.1)),
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                              context, _createRoute_3(5));
+                                        },
+                                        child: Text("Term of Service",
+                                            style: TextStyle(
+                                                color: Colors.blue,
+                                                fontSize: ipad
+                                                    ? 13 * size.width / 390
+                                                    : 15 * size.width / 390,
+                                                letterSpacing: 0.1)),
+                                      ),
+                                      Text(" and ",
+                                          style: TextStyle(
+                                              fontSize: ipad
+                                                  ? 13 * size.width / 390
+                                                  : 15 * size.width / 390,
+                                              letterSpacing: 0.1)),
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                              context, _createRoute_3(4));
+                                        },
+                                        child: Text("Privacy Policy",
+                                            style: TextStyle(
+                                                color: Colors.blue,
+                                                fontSize: ipad
+                                                    ? 13 * size.width / 390
+                                                    : 15 * size.width / 390,
+                                                letterSpacing: 0.1)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            ],
+                          )
                         ],
                       ))
                     : Text(""),
               ],
             ),
-            Positioned(
-                bottom: 10 * size.height / 350,
-                child: Column(
-                  children: [
-                    Text(
-                      "By signing up you agree to",
-                      style: TextStyle(
-                          fontSize: 16 * size.width / 390, letterSpacing: 0.1),
-                      textAlign: TextAlign.center,
-                    ),
-                    Row(
-                      children: [
-                        Text("our ",
-                            style: TextStyle(
-                                fontSize: 16 * size.width / 390,
-                                letterSpacing: 0.1)),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(context, _createRoute_3(5));
-                          },
-                          child: Text("Term of Service",
-                              style: TextStyle(
-                                  color: Colors.blue,
-                                  fontSize: 16 * size.width / 390,
-                                  letterSpacing: 0.1)),
-                        ),
-                        Text(" and ",
-                            style: TextStyle(
-                                fontSize: 16 * size.width / 390,
-                                letterSpacing: 0.1)),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(context, _createRoute_3(4));
-                          },
-                          child: Text("Privacy Policy",
-                              style: TextStyle(
-                                  color: Colors.blue,
-                                  fontSize: 16 * size.width / 390,
-                                  letterSpacing: 0.1)),
-                        ),
-                      ],
-                    )
-                  ],
-                )),
           ]),
         ),
       ),
