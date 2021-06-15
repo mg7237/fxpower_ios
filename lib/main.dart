@@ -490,7 +490,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   Widget build(BuildContext context) {
     return Material(
       child: Container(
-          padding: EdgeInsets.only(top: 80, left: 15),
+          padding: EdgeInsets.only(top: 80, left: ipad ? 25 : 15, right: ipad ? 25 : 15),
           child: Column(children: [
             Row(
               children: [
@@ -500,10 +500,10 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     child: Image(
                         image:
                             AssetImage('assets/success-green-check-mark.png'))),
-                SizedBox(width: 10),
+                SizedBox(width: ipad? 20 : 10),
                 Text("No Ads",
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: ipad? 15: 13,
                       color: Colors.grey[600],
                       fontFamily: "Montserrat",
                     ))
@@ -518,10 +518,10 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     child: Image(
                         image:
                             AssetImage('assets/success-green-check-mark.png'))),
-                SizedBox(width: 10),
+                 SizedBox(width: ipad? 20 : 10),
                 Text("Full access to all features",
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: ipad? 15: 13,
                       color: Colors.grey[600],
                       fontFamily: "Montserrat",
                     ))
@@ -536,10 +536,10 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     child: Image(
                         image:
                             AssetImage('assets/success-green-check-mark.png'))),
-                SizedBox(width: 10),
+                 SizedBox(width: ipad? 20 : 10),
                 Text("Strength order of 8 major currencies",
                     style: TextStyle(
-                        fontSize: 13,
+                        fontSize: ipad? 15: 13,
                         color: Colors.grey[600],
                         fontFamily: "Montserrat",
                         fontWeight: FontWeight.w500))
@@ -554,10 +554,10 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     child: Image(
                         image:
                             AssetImage('assets/success-green-check-mark.png'))),
-                SizedBox(width: 15),
+                 SizedBox(width: ipad? 20 : 10),
                 Text("Real-time update currency strength",
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: ipad? 15: 13,
                       color: Colors.grey[600],
                       fontFamily: "Montserrat",
                     ))
@@ -572,10 +572,10 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     child: Image(
                         image:
                             AssetImage('assets/success-green-check-mark.png'))),
-                SizedBox(width: 10),
+                 SizedBox(width: ipad? 20 : 10),
                 Text("Monitoring currency fluctuation",
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: ipad? 15: 13,
                       color: Colors.grey[600],
                       fontFamily: "Montserrat",
                     ))
@@ -590,23 +590,23 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     child: Image(
                         image:
                             AssetImage('assets/success-green-check-mark.png'))),
-                SizedBox(width: 10),
+                 SizedBox(width: ipad? 20 : 10),
                 Text("Customizable Notifications",
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: ipad? 15: 13,
                       color: Colors.grey[600],
                       fontFamily: "Montserrat",
                     ))
               ],
             ),
             SizedBox(
-              height: 55,
+              height: ipad ? 55 : 45,
             ),
             Text(
               'Get 7-Day Free Trial',
               style: TextStyle(
                 fontFamily: "Montserrat",
-                fontSize: 18,
+                fontSize: 20 * MediaQuery.of(context).size.width / 390,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -659,7 +659,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               ),
             ),
             SizedBox(
-              height: ipad ? 12 : 40,
+              height: 40
             ),
             GestureDetector(
               onTap: () async {
@@ -684,7 +684,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                       letterSpacing: 0.1)),
             ),
             SizedBox(
-              height: ipad ? 30 : 50,
+              height: ipad ? 50 : 30,
             ),
             Container(
               padding: EdgeInsets.symmetric(horizontal: 20),
